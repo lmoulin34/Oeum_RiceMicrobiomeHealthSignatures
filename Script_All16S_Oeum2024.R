@@ -256,10 +256,6 @@ ps_PS <- subset_samples(ps_16S, Field=="PreakSdei")
 plot_bar(ps_RV, fill="Phylum")
 
 
-# order
-desired_order <- list("S1", "S2", "S3", "S16", "S17", "S18", "S4", "S5", "S6", "S19", "S20", "S21", "S13", "S14", "S15", "S28", "S29", "S30", "S7", "S8", "S9", "S22", "S23", "S24", "S10", "S11", "S12", "S25", "S26", "S27", "S31", "S32", "S33",  "S34", "S35")
-
-
 p <- plot_bar(ps_16S, fill="Phylum") 
 p$data$Sample <- factor(p$data$Sample, levels = desired_order)
 print(p)
@@ -279,11 +275,11 @@ calculate_rarefaction_curves <- function(ps_16S, measures, depths) {
   require('plyr') # ldply
   require('reshape2') # melt
   
-  estimate_rarified_richness <- function(ps, measures, depth) {
+  estimate_rarified_richness <- function(ps_16S, measures, depth) {
     if(max(sample_sums(ps)) < depth) return()
-    ps <- prune_samples(sample_sums(ps) >= depth, ps)
+    ps_16S <- prune_samples(sample_sums(ps) >= depth, ps_16S)
     
-    rarified_ps <- rarefy_even_depth(ps, depth, verbose = FALSE)
+    rarified_ps <- rarefy_even_depth(ps_16S, depth, verbose = FALSE)
     
     alpha_diversity <- estimate_richness(rarified_ps, measures = measures)
     
@@ -294,7 +290,7 @@ calculate_rarefaction_curves <- function(ps_16S, measures, depths) {
   }
   
   names(depths) <- depths # this enables automatic addition of the Depth to the output by ldply
-  rarefaction_curve_data <- ldply(depths, estimate_rarified_richness, ps = ps, measures = measures, .id = 'Depth', .progress = ifelse(interactive(), 'text', 'none'))
+  rarefaction_curve_data <- ldply(depths, estimate_rarified_richness, ps = ps_16S, measures = measures, .id = 'Depth', .progress = ifelse(interactive(), 'text', 'none'))
   
   # convert Depth from factor to numeric
   rarefaction_curve_data$Depth <- as.numeric(levels(rarefaction_curve_data$Depth))[rarefaction_curve_data$Depth]
@@ -332,20 +328,12 @@ ggplot(
 
 #alpha diversity
 plot_richness(ps_RVL, x="FieldOrgHealth", measures=c("Shannon", "Simpson"), color="FieldOrgHealth")
-plot_richness(ps, x="condition", measures=c("Shannon", "Simpson"), color="medium")
-
-plot_richness(ps, x="medium", measures=c("Shannon", "Simpson"), color="medium")
-
-plot_richness(ps, x="medium", measures=c("condition", "Simpson"), color="medium") + geom_boxplot()
-
-plot_richness(ps, x="medium", measures=c("condition", "Shannon"), color="medium") + geom_boxplot()
 
 #Ordonate with x using sortby:
-plot_richness(ps, x="FieldOrgHealth", measures=c("Field", "Shannon"), color="Field", sortby = "Shannon") + geom_boxplot()
-plot_richness(ps, x="medium", measures=c("Shannon", "Simpson"), color="medium", sortby = "Shannon") + geom_boxplot()
+plot_richness(ps_RVL, x="FieldOrgHealth", measures=c("Field", "Shannon"), color="Field", sortby = "Shannon") + geom_boxplot()
 
 #remove grey font
-plot_richness(ps, x="medium", measures=c("Shannon", "Simpson"), color="medium", sortby = "Shannon") + geom_boxplot() + theme_bw()
+plot_richness(ps_RVL, x="FieldOrgHealth", measures=c("Shannon", "Simpson"), color="FieldOrgHealth", sortby = "Shannon") + geom_boxplot() + theme_bw()
 
 #Export a table with richness scores
 rich = estimate_richness(ps.rarefied)
@@ -359,8 +347,8 @@ plot_ordination(ps.prop, ord.nmds.bray, color="FieldOrgHealth", title="Bray NMDS
 
 # PCoA plot using the unweighted UniFrac as distance (need tree in phyloseq object)
 wunifrac_dist = phyloseq::distance(ps_16S, method="unifrac", weighted=F)
-ordination = ordinate(ps, method="PCoA", distance=wunifrac_dist)
-plot_ordination(ps_RVL, ordination, color="Field") + theme(aspect.ratio=1)
+ordination = ordinate(ps_16S, method="PCoA", distance=wunifrac_dist)
+plot_ordination(ps_16S, ordination, color="Field") + theme(aspect.ratio=1)
 #Test if conditions differ significantly from each other using the permutational ANOVA (PERMANOVA) analysis:
 
 adonis(wunifrac_dist ~ sample_data(ps_16S_5000F)$condition)
@@ -374,11 +362,6 @@ plotbar(ps_16S_10000F_filter10, level = "Phylum", color = NULL,group = "FieldOrg
 plotbar(ps_16S_10000F_filter10, level = "Class", color = NULL,group = "FieldOrgHealth",
         top = 50,return = FALSE,fontsize.x = 10,  fontsize.y = 12)
 
-
-desired_order <- list("TSA10", "TSA50", "FR", "NGN", "NFB", "Root")
-
-plotbar(ps_16S_filter2, level = "Phylum", color = NULL,group = "medium",
-        top = 10,return = FALSE,fontsize.x = 5,  fontsize.y = 12)
 
 
 #Top 30 phylum
